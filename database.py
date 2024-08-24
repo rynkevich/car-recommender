@@ -1,13 +1,13 @@
 import json
 import os.path
-import shutil
 
-from langchain_community.vectorstores import Chroma
+import chromadb
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveJsonSplitter
 
-from config import configure_openai
+import config
 
 DATA_PATH = 'data/cars.json'
 CHROMA_PATH = 'db'
@@ -23,12 +23,14 @@ def load_data() -> list[Document]:
 
 def setup_database() -> Chroma:
     if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
+        client_settings = chromadb.config.Settings(is_persistent=True, persist_directory=CHROMA_PATH)
+        chroma_client = chromadb.Client(client_settings)
+        return Chroma(client=chroma_client, embedding_function=OpenAIEmbeddings())
 
     documents = load_data()
     return Chroma.from_documents(documents, OpenAIEmbeddings(), persist_directory=CHROMA_PATH)
 
 
 if __name__ == '__main__':
-    configure_openai()
+    config.initialize()
     setup_database()
